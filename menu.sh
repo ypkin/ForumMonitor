@@ -141,9 +141,18 @@ run_logs() {
     msg_info "正在加载实时日志..."
     echo -e "${YELLOW}👉 按 '0' 返回主菜单 | 按 'Ctrl+C' 退出脚本${NC}"
     echo -e "${GRAY}--------------------------------------------------${NC}"
-    $DC logs -f --tail 50 app </dev/null &
+    # setsid 让日志进程自成进程组：docker compose logs 被 kill 后 wait 会永久挂起，
+    # 必须整组 TERM→KILL 才能可靠收尾（否则按 0 返回时卡死在 wait 上）
+    setsid $DC logs -f --tail 50 app </dev/null &
     local LOG_PID=$!
-    cleanup_logs() { kill "$LOG_PID" >/dev/null 2>&1 || true; wait "$LOG_PID" 2>/dev/null || true; }
+    cleanup_logs() {
+        [ -n "${LOG_PID:-}" ] || return 0
+        kill -TERM -"$LOG_PID" >/dev/null 2>&1 || true
+        local i; for i in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$LOG_PID" 2>/dev/null || break; sleep 0.2; done
+        kill -KILL -"$LOG_PID" >/dev/null 2>&1 || true
+        wait "$LOG_PID" 2>/dev/null || true
+        LOG_PID=""
+    }
     trap 'trap - SIGINT EXIT; cleanup_logs; echo; msg_ok "已退出脚本"; exit 0' SIGINT
     trap cleanup_logs EXIT
     while true; do
