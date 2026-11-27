@@ -72,22 +72,24 @@ PY
 }
 
 mask() { local v="$1" n=${#1}; if [ "$n" -eq 0 ]; then echo "(未填)"; elif [ "$n" -le 8 ]; then echo "****"; else echo "${v:0:4}****${v: -4}"; fi; }
-app_id() { $DC ps -q app 2>/dev/null; }
+# 注意：docker compose 子命令会吞掉标准输入，所有不靠 stdin 喂脚本的调用都必须 </dev/null，
+# 否则会把用户在菜单里输入的选项吃掉（run_test_push/run_view_history 用 heredoc 喂脚本的除外）
+app_id() { $DC ps -q app </dev/null 2>/dev/null; }
 app_running() { [ -n "$(app_id)" ]; }
 
 run_restart() {
-    if app_running; then $DC restart app >/dev/null 2>&1 && msg_ok "已重启" || msg_err "重启失败";
+    if app_running; then $DC restart app </dev/null >/dev/null 2>&1 && msg_ok "已重启" || msg_err "重启失败";
     else msg_info "服务未运行，下次启动时生效"; fi
 }
 
 push_count() {
     app_running || { echo "-"; return; }
-    timeout 6 $DC exec -T app python -c "import pymongo,os; print(pymongo.MongoClient(os.getenv('MONGO_HOST','mongodb://mongo:27017/'))['forum_monitor']['push_logs'].count_documents({}))" 2>/dev/null || echo "-"
+    timeout 6 $DC exec -T app python -c "import pymongo,os; print(pymongo.MongoClient(os.getenv('MONGO_HOST','mongodb://mongo:27017/'))['forum_monitor']['push_logs'].count_documents({}))" </dev/null 2>/dev/null || echo "-"
 }
 
 restart_count() {
     local id; id=$(app_id)
-    [ -n "$id" ] && docker inspect -f '{{.RestartCount}}' "$id" 2>/dev/null || echo "-"
+    [ -n "$id" ] && docker inspect -f '{{.RestartCount}}' "$id" </dev/null 2>/dev/null || echo "-"
 }
 
 # ---------------- 基础管理 ----------------
@@ -97,8 +99,8 @@ run_install() {
         msg_warn "已生成 $CONFIG，请先用菜单 9/10 填好 Token 与 AI 密钥"
     fi
     msg_info "构建并启动（安装/重置）..."
-    $DC up -d --build && msg_ok "安装/重置完成"
-    $DC ps
+    $DC up -d --build </dev/null && msg_ok "安装/重置完成"
+    $DC ps </dev/null
 }
 
 run_uninstall() {
@@ -108,27 +110,27 @@ run_uninstall() {
     crontab -l 2>/dev/null | grep -v "fm-keepalive" | crontab - 2>/dev/null || true
     read -p "连镜像和配置文件 data/config.json 一起删? (y/n): " c2
     if [ "$c2" = "y" ]; then
-        $DC down -v --rmi local
+        $DC down -v --rmi local </dev/null
         rm -f "$CONFIG"
         msg_ok "彻底卸载完成（容器/数据卷/镜像/配置已删）"
     else
-        $DC down -v
+        $DC down -v </dev/null
         msg_ok "卸载完成（配置保留在 $CONFIG）"
     fi
 }
 
 run_update() {
     if [ -d .git ]; then git pull --ff-only || { msg_err "git pull 失败"; return; }; fi
-    $DC up -d --build && msg_ok "更新完成（已拉最新代码并重建）"
+    $DC up -d --build </dev/null && msg_ok "更新完成（已拉最新代码并重建）"
 }
 
 # ---------------- 服务控制 ----------------
-run_start() { $DC up -d && msg_ok "已启动"; }
-run_stop()  { $DC down && msg_ok "已停止"; }
-run_restart2() { app_running && $DC restart app && msg_ok "已重启" || msg_err "服务未运行"; }
+run_start() { $DC up -d </dev/null && msg_ok "已启动"; }
+run_stop()  { $DC down </dev/null && msg_ok "已停止"; }
+run_restart2() { app_running && $DC restart app </dev/null && msg_ok "已重启" || msg_err "服务未运行"; }
 
 run_status() {
-    $DC ps
+    $DC ps </dev/null </dev/null
     if [ -f data/heartbeat.txt ]; then
         local hb; hb=$(tr -cd '0-9' < data/heartbeat.txt)
         [ -n "$hb" ] && echo -e "--- 心跳: ${GREEN}$(( $(date +%s) - hb )) 秒前${NC} | 容器自动重启: $(restart_count) 次 | 已推送通知: $(push_count)"
@@ -139,7 +141,7 @@ run_logs() {
     msg_info "正在加载实时日志..."
     echo -e "${YELLOW}👉 按 '0' 返回主菜单 | 按 'Ctrl+C' 退出脚本${NC}"
     echo -e "${GRAY}--------------------------------------------------${NC}"
-    $DC logs -f --tail 50 app &
+    $DC logs -f --tail 50 app </dev/null &
     local LOG_PID=$!
     cleanup_logs() { kill "$LOG_PID" >/dev/null 2>&1 || true; wait "$LOG_PID" 2>/dev/null || true; }
     trap 'trap - SIGINT EXIT; cleanup_logs; echo; msg_ok "已退出脚本"; exit 0' SIGINT
@@ -244,7 +246,7 @@ run_toggle_push() {
         echo "  1. Telegram : $( [ "$tg" = "true" ] && echo -e "${GREEN}ON${NC}" || echo -e "${RED}OFF${NC}" )"
         echo "  2. PushPlus : $( [ "$pp" = "true" ] && echo -e "${GREEN}ON${NC}" || echo -e "${RED}OFF${NC}" )"
         echo "  0. 返回"
-        read -p "输入编号切换: " sel
+        read -p "输入编号切换: " sel || break
         case "$sel" in
             1) [ "$tg" = "true" ] && pyset enable_telegram false || pyset enable_telegram true ;;
             2) [ "$pp" = "true" ] && pyset enable_pushplus false || pyset enable_pushplus true ;;
@@ -299,7 +301,7 @@ run_prompt_menu() {
         echo -e "${GRAY}----------------------------------------------------------------${NC}"
         echo -e "  3. 重置: 恢复默认提示词 (Reset to Default)"
         echo -e "  0. 返回上级菜单"
-        read -p "请选择: " o
+        read -p "请选择: " o || return
         case "$o" in
             1) _edit_prompt_text "thread_prompt" "帖子摘要提示词"; pause ;;
             2) _edit_prompt_text "filter_prompt" "回复过滤提示词"; pause ;;
@@ -320,7 +322,7 @@ edit_list() { # key 显示名
         echo "  a. 添加"
         echo "  d. 按编号删除"
         echo "  0. 返回"
-        read -p "选择: " act
+        read -p "选择: " act || break
         case "$act" in
             a) read -p "输入要添加的内容: " v; [ -n "$v" ] && pyset "$key" "+$v" && msg_ok "已添加" ;;
             d) read -p "要删除的编号: " n; [ -n "$n" ] && pyset "$key" "-$n" && msg_ok "已删除" ;;
@@ -365,7 +367,7 @@ run_test_ai() {
     msg_info "正在测试 AI..."
     local RES
     RES=$($DC exec -T app python -c "$HELPER_PREAMBLE
-print(m.get_filter_from_ai('Test message.'))" 2>&1)
+print(m.get_filter_from_ai('Test message.'))" </dev/null 2>&1)
     echo "API Response: $RES"
     if [[ "$RES" == *"FALSE"* ]] || [[ -n "$RES" ]]; then msg_ok "AI 响应成功"; else msg_err "AI 响应为空/失败"; fi
 }
@@ -458,7 +460,7 @@ try:
         m.notifier.send_html_message(f'🟡 [Repush] {safe_title}', msg_content)
         time.sleep(2)
 except Exception as e: print(f'Error: {e}')
-"
+" </dev/null
 }
 
 # ---------------- 主菜单 ----------------
@@ -546,7 +548,7 @@ dispatch() {
 if [ $# -ge 1 ]; then
     case "$1" in
         monitor) # 兼容原版保活调用习惯：容器不在就拉起
-            $DC up -d >/dev/null 2>&1; exit 0 ;;
+            $DC up -d </dev/null >/dev/null 2>&1; exit 0 ;;
         *) dispatch "$1"; exit $? ;;
     esac
 fi
@@ -556,7 +558,7 @@ command -v python3 >/dev/null 2>&1 || msg_err "需要宿主机 python3 才能读
 
 while true; do
     print_header
-    read -p "请输入选项: " opt
+    read -p "请输入选项: " opt || exit 0
     case "$opt" in
         q|quit) exit 0 ;;
         logs|8) dispatch logs ;;
