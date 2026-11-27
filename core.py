@@ -56,6 +56,7 @@ VERDICT_COMMENT_PROMPT = """你是一个 VPS 优惠评论的准入裁决员。�
 - push=true：评论带来新促销、补货、降价或抽奖，且至少包含以下一项具体要素：价格、订购链接、优惠码、明确的补货数量或套餐。
 - push=false：顶帖(bump)、感谢、提问、晒单、订单号、闲聊；只有 "restocked"、"back in stock" 等字样但没有任何具体要素的，也不推。
 - push=false：主消息是标题主推套餐已售罄，只是顺带推荐其他套餐有货——即使带订购链接或优惠码也不推（那不是补货，其他套餐原帖里本来就能买）。只有售罄套餐本身补货、或原帖没有的新优惠码/新降价，才算新机会。
+- push=false：纯宣传口号刷屏——只有商家广告语加一个通用链接（主页/分类页），没有任何具体要素（价格、优惠码、补货数量、具体套餐）的，不推。这类是普通用户为抽奖复制粘贴的刷屏，通用链接不算新的下单入口。
 
 示例：
 输入："Restocked 50x 2GB plan in HK, $10/yr: https://example.com/order" 输出：{"push": true}
@@ -65,6 +66,7 @@ VERDICT_COMMENT_PROMPT = """你是一个 VPS 优惠评论的准入裁决员。�
 输入："Any plan for restock?" 输出：{"push": false}
 输入："Yes all of our $7/yr Linux plans are sold out. However, we have Ryzen/i9 availability: https://example.com/order?promocode=BF2GB" 输出：{"push": false}
 输入："The $7/yr plan is back in stock, 30 more available: https://example.com/order?promocode=BF1GB" 输出：{"push": true}
+输入："💥🔥 KABOOM! ExampleHost’s BLACKFRIDAY EVENT IS NEXT LEVEL — Grab yours now: https://www.example.com/dedicated-servers 🔥💥" 输出：{"push": false}
 
 只输出一个 JSON：{"push": true} 或 {"push": false}。不要输出任何其他文字。"""
 
