@@ -4,6 +4,9 @@ services:
     restart: unless-stopped
     # 限制 WiredTiger 缓存，小内存机器也能跑
     command: ["mongod", "--wiredTigerCacheSizeGB", "0.25"]
+    ports:
+      # 仅本机回环，供 host 网络模式的 app 连接
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo-data:/data/db
 
@@ -12,8 +15,13 @@ services:
     restart: unless-stopped
     depends_on:
       - mongo
+    network_mode: host
+    extra_hosts:
+      - "lowendtalk.com:2606:4700:20::681a:904"
+      - "lowendtalk.com:2606:4700:20::681a:804"
+      - "lowendtalk.com:2606:4700:20::ac43:4409"
     environment:
-      MONGO_HOST: "mongodb://mongo:27017/"
+      MONGO_HOST: "mongodb://127.0.0.1:27017/"
     volumes:
       # 配置文件 data/config.json 与运行数据都放这里
       - ./data:/app/data
