@@ -31,6 +31,18 @@ docker compose logs -f app
 
 停止：`docker compose down`（数据在 named volume 里，不会丢）。
 
+## 管理菜单
+
+仓库自带宿主机管理脚本（需要宿主机有 python3），常用操作不用记命令：
+
+```bash
+./menu.sh
+```
+
+菜单包含：运行状态 / 启停 / 重启 / 实时日志、Telegram 与 PushPlus 设置、AI 引擎切换与模型设置、轮询频率、VIP 专线帖子增删、测试推送、测试 AI、更新（拉代码+重建）。在菜单里改完配置会自动重启 app 生效。
+
+也可以直接带参数执行：`./menu.sh status|start|stop|restart|logs|update`。
+
 ## 配置说明（data/config.json）
 
 | 键 | 说明 | 获取方式 |
@@ -67,6 +79,7 @@ MONGO_HOST="mongodb://localhost:27017/" python core.py
 ```
 core.py                 主程序（抓取 / AI / 推送调度）
 send.py                 推送模块（Telegram + PushPlus）
+menu.sh                 宿主机管理菜单（启停 / 改配置 / 测试推送与 AI）
 data/config.example.json  配置模板（真实配置 data/config.json 不入库）
 Dockerfile / docker-compose.yml
 ```
