@@ -42,7 +42,7 @@ pyset() { # pyset key value（bool/int/list 按 key 名自动转换；list 用 +
 import json, sys
 key, val = sys.argv[1], sys.argv[2]
 BOOL_KEYS = {'enable_telegram', 'enable_pushplus'}
-INT_KEYS = {'frequency', 'max_workers'}
+INT_KEYS = {'frequency', 'frequency_min', 'frequency_max', 'max_workers'}
 LIST_KEYS = {'vip_threads', 'monitored_usernames', 'monitored_roles'}
 path = 'data/config.json'
 d = json.load(open(path)); c = d['config']
@@ -214,11 +214,19 @@ run_ai_switch() {
 }
 
 run_edit_frequency() {
-    local cur; cur=$(pyget frequency 30)
-    echo "当前: $cur 秒"
-    read -p "新间隔 (秒): " v
-    if ! [[ "$v" =~ ^[0-9]+$ ]]; then msg_err "无效数字"; return 1; fi
-    pyset frequency "$v"; run_restart
+    local base cmin cmax
+    base=$(pyget frequency 30)
+    cmin=$(pyget frequency_min "$base")
+    cmax=$(pyget frequency_max "$base")
+    echo "当前轮询间隔: ${cmin}~${cmax} 秒（每轮随机）"
+    read -p "新最小间隔 (秒): " vmin
+    if ! [[ "$vmin" =~ ^[0-9]+$ ]]; then msg_err "无效数字"; return 1; fi
+    read -p "新最大间隔 (秒): " vmax
+    if ! [[ "$vmax" =~ ^[0-9]+$ ]]; then msg_err "无效数字"; return 1; fi
+    if [ "$vmax" -lt "$vmin" ]; then msg_err "最大间隔不能小于最小间隔"; return 1; fi
+    pyset frequency_min "$vmin"; pyset frequency_max "$vmax"; pyset frequency "$vmin"
+    msg_ok "轮询间隔已设为 ${vmin}~${vmax} 秒随机，重启中..."
+    run_restart
 }
 
 run_edit_threads() {
@@ -479,7 +487,7 @@ print_header() {
     prov=$(pyget ai_provider gemini); prov=${prov^^}
     if [ "$(pyget ai_provider gemini)" = "workers" ]; then model=$(pyget cf_model); else model=$(pyget model); fi
     if [ ${#model} -gt 18 ]; then mshow="${model:0:18}.."; else mshow="$model"; fi
-    freq=$(pyget frequency 30)
+    freq="$(pyget frequency_min "$(pyget frequency 30)")~$(pyget frequency_max "$(pyget frequency 30)")s 随机"
     tg=$(pyget enable_telegram); pp=$(pyget enable_pushplus)
     pc=$(push_count); rc=$(restart_count)
     echo -e "${BLUE}================================================================${NC}"
@@ -506,7 +514,7 @@ print_header() {
     echo -e " ${CYAN}[配置管理]${NC}"
     printf "  %-4s %-14s %s\n" "9." "edit" "修改Token/ID"
     printf "  %-4s %-14s %s\n" "10." "ai-switch" "切换AI引擎"
-    printf "  %-4s %-14s %s\n" "11." "frequency" "调整频率"
+    printf "  %-4s %-14s %s\n" "11." "frequency" "调整频率(随机范围)"
     printf "  %-4s %-14s %s\n" "12." "threads" "修改线程数"
     printf "  %-4s %-14s %s\n" "13." "keepalive" "开启保活"
     printf "  %-4s %-14s %b%s%b\n" "14." "toggle-push" "$GREEN" "推送通道开关" "$NC"

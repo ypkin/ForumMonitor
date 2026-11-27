@@ -8,6 +8,7 @@ from send import NotificationSender
 import os
 import sys
 import re
+import random
 import fcntl
 import psutil
 import google.generativeai as genai
@@ -585,9 +586,28 @@ class ForumMonitor:
                 log(f"   -> [{obj_name}] 错误: {e}", RED)
         log(f"列表页完成 | 耗时: {time.time()-start_t:.2f}s", MAGENTA)
 
+    def next_sleep(self):
+        """本轮休眠秒数：frequency_min~frequency_max 之间随机（菜单 11 可调）。
+
+        范围未设置时回退到旧版固定 frequency，保持旧配置行为不变；
+        min>max 自动对调，下限最低 1 秒。
+        """
+        cfg = self.config
+        base = int(cfg.get('frequency', 300))
+        lo = cfg.get('frequency_min')
+        hi = cfg.get('frequency_max')
+        if lo is None and hi is None:
+            return base
+        lo = int(lo) if lo is not None else base
+        hi = int(hi) if hi is not None else base
+        if lo > hi:
+            lo, hi = hi, lo
+        lo = max(1, lo)
+        hi = max(lo, hi)
+        return random.randint(lo, hi)
+
     def start_monitoring(self):
         log("=== 监控服务启动 (v2.0) ===", GREEN, "🚀")
-        freq = self.config.get('frequency', 300)
         while True:
             t0 = time.time()
             self.processed_urls_this_cycle.clear()
@@ -596,8 +616,9 @@ class ForumMonitor:
             self.check_vip_threads()
             self.check_category_list()
             self.update_heartbeat()
-            log(f"⏱️ 耗时: {time.time()-t0:.2f}s | 休眠 {freq}s...", YELLOW)
-            time.sleep(freq)
+            sleep_s = self.next_sleep()
+            log(f"⏱️ 耗时: {time.time()-t0:.2f}s | 休眠 {sleep_s}s...", YELLOW)
+            time.sleep(sleep_s)
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(line_buffering=True)
