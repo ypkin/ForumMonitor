@@ -340,7 +340,9 @@ class ForumMonitor:
 
             ai_resp = self.get_filter_from_ai(comment_data['message'])
             upper_resp = ai_resp.upper()
-            
+            if "FALSE" in upper_resp or "无法分析" in ai_resp or "CANNOT" in upper_resp:
+                log(f"      🚫 [Filter] AI 判定无新机会", GRAY)
+
             if "FALSE" not in upper_resp and "无法分析" not in ai_resp and "CANNOT" not in upper_resp:
                 log(f"      🚀 关键词匹配! 推送中...", GREEN)
                 ai_resp_html = self.markdown_to_html(ai_resp)
