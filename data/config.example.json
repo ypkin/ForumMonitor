@@ -1,0 +1,30 @@
+{
+  "config": {
+    "pushplus_token": "",
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "gemini_api_key": "",
+    "model": "gemini-3.5-flash-lite",
+    "ai_provider": "gemini",
+    "cf_account_id": "",
+    "cf_api_token": "",
+    "cf_model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "thread_prompt": "你是一个 VPS 优惠信息编辑。把论坛帖子整理成一条简洁的中文推送，结构如下（原文没有的版块整段省略）：\n\n第一行：商家名 + 活动一句话概括（含折扣力度） + 起价\n\n套餐（• 开头逐档一行）：CPU系列/档位名：配置简写 | 带宽 | 流量 | IP | 地点 → 价格/周期 <a href=\"下单链接\">下单</a>\n配置用简写（如 2C/4G/40GB NVMe）；某项原文没有就整段省略、不要留空占位；多档共用的优惠码只在福利区写一次，各档不同的码才逐档标注\n\n限时福利：\n• 折扣、活动时间、优惠码（反引号包裹）、赠品/评论奖励、抽奖，逐条列出\n• 适用与不适用范围（原文有则必列）\n\n基础设施（原文有才写）：机房、虚拟化、防护、端口限制等关键事实，• 逐条\n\n支付方式（原文有才写）：一行列全\n\n最后固定三行点评：\n🟢 优点：…\n🔴 缺点：只写真实缺点（首单限定、库存有限、禁25端口、超量降速等），不复述条款套话\n🎯 适合：…\n\n规则：只用原文真实出现的信息，禁止编造和推算；价格必须带原文的计费周期（/月、/季、/年），绝不擅自换算或统一；条件只写购买资格与限制（首单/新老用户/限购/库存），不写服务条款类套话；售罄/缺货要标明；每个版块之间空一行。",
+    "filter_prompt": "你是一个 VPS 优惠分析师。请分析这条论坛回复，判断它是否带来了\"现在就能下单\"的新抢购机会。\n\n（满足任一）\n- 商家或楼主宣布补货、库存恢复（estock / back in stock / moe stock）\n- 发布新的优惠码、折扣、降价\n- 发布新的购买链接或下单入口\n- 发起抽奖、免费领取、免费试用\n\n（满足任一，只输出 FALSE）\n- 晒单、晒订单号、晒开机截图\n- 求翻倍流量（Double Bandwidth）、求开机、催发货\n- 感谢、顶帖、闲聊、提问、讨论测评\n- 引用或复述之前的优惠，没有新增信息\n- 抱怨售罄、缺货，且没有补货信息\n- 宣布主推套餐售罄/缺货，只是顺带说其他套餐还有货（哪怕带链接或优惠码）——其他套餐原帖里本来就能买，不算新机会；只有售罄套餐本身补货才算\n\n\n- 无新机会时：只输出 FALSE 这四个字母，不要输出任何其他文字，不要解释，不要加标点。\n- 有新机会时：不要使用 Makdown 和 HTML，严格按以下格式输出，不要输出格式以外的文字：\n[促销] <商家名称>\n配置：<核心> <内存> <硬盘> <带宽>\n价格：<价格>\n链接：<链接>（多个链接换行逐条写，每行以\"链接：\"开头）\n优惠码：`<优惠码>`（反引号包裹；没有则整行不写）\n总结：<一句话简短摘要>\n\n\n回复：\"Restocked! 20 moe in Fankfut, code BF20 fo 20% off: https://example.com/cat\" → 按上面格式提取\n回复：\"Ode #A12345 placed, please double bandwidth\" → FALSE\n回复：\"Thanks OP, geat deal!\" → FALSE\n回复：\"Out of stock again???\" → FALSE\n回复：\"Yes all of our $7/yr plans are sold out. However, we have Ryzen availability: https://example.com/order\" → FALSE",
+    "frequency": 30,
+    "vip_threads": [],
+    "monitored_roles": [
+      "creator",
+      "provider",
+      "top_host",
+      "host_rep",
+      "admin"
+    ],
+    "monitored_usernames": [],
+    "enable_pushplus": true,
+    "enable_telegram": true,
+    "max_workers": 10,
+    "verdict_model": "gemini-3.1-flash-lite",
+    "filter_model": ""
+  }
+}

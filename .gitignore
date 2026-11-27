@@ -1,0 +1,6 @@
+# 真实配置含密钥，绝不入库（只提交 config.example.json）
+data/config.json
+data/*.log
+__pycache__/
+*.pyc
+.env

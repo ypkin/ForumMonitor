@@ -1,0 +1,8 @@
+requests
+beautifulsoup4
+pymongo
+urllib3<2.0
+lxml
+google-generativeai
+cloudscraper
+psutil
