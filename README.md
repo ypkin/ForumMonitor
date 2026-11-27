@@ -39,9 +39,17 @@ docker compose logs -f app
 ./menu.sh
 ```
 
-菜单包含：运行状态 / 启停 / 重启 / 实时日志、Telegram 与 PushPlus 设置、AI 引擎切换与模型设置、轮询频率、VIP 专线帖子增删、测试推送、测试 AI、更新（拉代码+重建）。在菜单里改完配置会自动重启 app 生效。
+菜单与原脚本版 `fm` 菜单功能一一对应（22 项，一个不少）：
 
-也可以直接带参数执行：`./menu.sh status|start|stop|restart|logs|update`。
+- 基础管理：install 安装/重置、uninstall 彻底卸载、update 更新代码
+- 服务控制：start / stop / restart / status / logs
+- 配置管理：edit 修改 Token/ID、ai-switch 切换 AI 引擎（含模型分流）、frequency 频率、threads 线程数、keepalive 保活（crontab 每 5 分钟拉起）、toggle-push 推送通道开关、prompt 提示词设置（编辑/重置）
+- 监控规则：vip 专线、roles 监控角色、users 指定用户
+- 功能测试：test-ai、test-push（全真模拟推送）、history 推送历史、repush 手动重推最近 5 帖
+
+菜单头会显示运行状态、已推送通知数、当前引擎/模型、容器自动重启次数、双通道开关状态。改完配置自动重启 app 生效。
+
+也可以直接带命令名执行，如 `./menu.sh test-push`、`./menu.sh status`。
 
 ## 配置说明（data/config.json）
 
