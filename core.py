@@ -587,37 +587,50 @@ class ForumMonitor:
         log(f"列表页完成 | 耗时: {time.time()-start_t:.2f}s", MAGENTA)
 
     def next_sleep(self):
-        """本轮休眠秒数：frequency_min~frequency_max 之间随机（菜单 11 可调）。
-
-        范围未设置时回退到旧版固定 frequency，保持旧配置行为不变；
-        min>max 自动对调，下限最低 1 秒。
+        """本轮休眠秒数：先按 frequency_min~frequency_max 随机得到最短间隔
+        （菜单 11 可调；范围未设置时回退到旧版固定 frequency），再把唤醒
+        时刻向上取整到整分钟 :00——保证每轮轮询都在某一分钟的 0 秒开始，
+        而 VIP 专线是每轮第一项，等于 VIP 轮询卡在 :00 出发。
+        min>max 自动对调，下限最低 1 秒；算出的休眠不足 2 秒时顺延一分钟，
+        避免与上一轮挤进同一分钟重复扫。
         """
         cfg = self.config
         base = int(cfg.get('frequency', 300))
         lo = cfg.get('frequency_min')
         hi = cfg.get('frequency_max')
         if lo is None and hi is None:
-            return base
-        lo = int(lo) if lo is not None else base
-        hi = int(hi) if hi is not None else base
-        if lo > hi:
-            lo, hi = hi, lo
-        lo = max(1, lo)
-        hi = max(lo, hi)
-        return random.randint(lo, hi)
+            interval = base
+        else:
+            lo = int(lo) if lo is not None else base
+            hi = int(hi) if hi is not None else base
+            if lo > hi:
+                lo, hi = hi, lo
+            lo = max(1, lo)
+            hi = max(lo, hi)
+            interval = random.randint(lo, hi)
+        now = time.time()
+        wake = (int(now + interval) // 60 + 1) * 60
+        sleep_s = wake - now
+        if sleep_s < 2:
+            sleep_s += 60
+        return sleep_s
 
     def start_monitoring(self):
         log("=== 监控服务启动 (v2.0) ===", GREEN, "🚀")
+        wait0 = 60 - (time.time() % 60)
+        if wait0 > 1:
+            log(f"⏱️ 对齐整分钟: {wait0:.0f}s 后开始首轮轮询...", YELLOW)
+            time.sleep(wait0)
         while True:
             t0 = time.time()
             self.processed_urls_this_cycle.clear()
             print(f"{GRAY}--------------------------------------------------{NC}")
-            self.check_rss()
             self.check_vip_threads()
+            self.check_rss()
             self.check_category_list()
             self.update_heartbeat()
             sleep_s = self.next_sleep()
-            log(f"⏱️ 耗时: {time.time()-t0:.2f}s | 休眠 {sleep_s}s...", YELLOW)
+            log(f"⏱️ 耗时: {time.time()-t0:.2f}s | 休眠 {sleep_s:.0f}s...", YELLOW)
             time.sleep(sleep_s)
 
 if __name__ == "__main__":

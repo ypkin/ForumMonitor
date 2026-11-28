@@ -514,7 +514,7 @@ print_header() {
     echo -e " ${CYAN}[配置管理]${NC}"
     printf "  %-4s %-14s %s\n" "9." "edit" "修改Token/ID"
     printf "  %-4s %-14s %s\n" "10." "ai-switch" "切换AI引擎"
-    printf "  %-4s %-14s %s\n" "11." "frequency" "调整频率(随机范围)"
+    printf "  %-4s %-14s %s\n" "11." "frequency" "调整频率(随机范围,整分钟:00对齐)"
     printf "  %-4s %-14s %s\n" "12." "threads" "修改线程数"
     printf "  %-4s %-14s %s\n" "13." "keepalive" "开启保活"
     printf "  %-4s %-14s %b%s%b\n" "14." "toggle-push" "$GREEN" "推送通道开关" "$NC"
