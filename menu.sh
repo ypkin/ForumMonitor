@@ -215,7 +215,7 @@ run_ai_switch() {
 
 run_edit_frequency() {
     local base cmin cmax
-    base=$(pyget frequency 30)
+    base=$(pyget frequency 40)
     cmin=$(pyget frequency_min "$base")
     cmax=$(pyget frequency_max "$base")
     echo "当前轮询间隔: ${cmin}~${cmax} 秒（每轮随机）"
@@ -487,7 +487,7 @@ print_header() {
     prov=$(pyget ai_provider gemini); prov=${prov^^}
     if [ "$(pyget ai_provider gemini)" = "workers" ]; then model=$(pyget cf_model); else model=$(pyget model); fi
     if [ ${#model} -gt 18 ]; then mshow="${model:0:18}.."; else mshow="$model"; fi
-    freq="$(pyget frequency_min "$(pyget frequency 30)")~$(pyget frequency_max "$(pyget frequency 30)")s 随机"
+    freq="$(pyget frequency_min "$(pyget frequency 40)")~$(pyget frequency_max "$(pyget frequency 55)")s 随机"
     tg=$(pyget enable_telegram); pp=$(pyget enable_pushplus)
     pc=$(push_count); rc=$(restart_count)
     echo -e "${BLUE}================================================================${NC}"

@@ -588,21 +588,23 @@ class ForumMonitor:
 
     def next_sleep(self):
         """本轮休眠秒数：先按 frequency_min~frequency_max 随机得到最短间隔
-        （菜单 11 可调；范围未设置时回退到旧版固定 frequency），再把唤醒
-        时刻向上取整到整分钟 :00——保证每轮轮询都在某一分钟的 0 秒开始，
-        而 VIP 专线是每轮第一项，等于 VIP 轮询卡在 :00 出发。
+        （菜单 11 可调；范围与固定 frequency 都未设置时默认 40~55 秒随机），
+        再把唤醒时刻向上取整到整分钟 :00——保证每轮轮询都在某一分钟的
+        0 秒开始，而 VIP 专线是每轮第一项，等于 VIP 轮询卡在 :00 出发。
         min>max 自动对调，下限最低 1 秒；算出的休眠不足 2 秒时顺延一分钟，
         避免与上一轮挤进同一分钟重复扫。
         """
         cfg = self.config
-        base = int(cfg.get('frequency', 300))
         lo = cfg.get('frequency_min')
         hi = cfg.get('frequency_max')
         if lo is None and hi is None:
-            interval = base
+            if 'frequency' in cfg:
+                interval = int(cfg['frequency'])
+            else:
+                interval = random.randint(40, 55)
         else:
-            lo = int(lo) if lo is not None else base
-            hi = int(hi) if hi is not None else base
+            lo = int(lo) if lo is not None else 40
+            hi = int(hi) if hi is not None else 55
             if lo > hi:
                 lo, hi = hi, lo
             lo = max(1, lo)
